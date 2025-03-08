@@ -1,0 +1,39 @@
+name: Terraform Apply
+
+on:
+  workflow_run:
+    workflows: ["Terraform PR Plan"]  # Must match the 'name' in terraform-plan.yml
+    types: [ "completed" ]
+
+#permissions:
+  #contents: write       # If you need to push tags or read code
+  #pull-requests: write  # Typically for merging or commenting on PRs
+  # plus any other perms needed to read secrets
+
+jobs:
+  terraform-apply:
+    # This workflow runs after the "Terraform PR Plan" workflow completes
+    # in the main repo. It can have higher privileges and secrets.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Merged Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          repository: ${{ github.event.workflow_run.head_repository }}
+          # If you want to apply after the PR is merged, you can also checkout
+          # the 'main' branch or the 'merge_commit_sha'.
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+        
+      - name: Terraform Plan
+        run: terraform plan -no-color
+        continue-on-error: true
+
+      - name: Terraform Apply
+        # Now we do the real apply, with valid credentials
+        run: terraform apply -auto-approve

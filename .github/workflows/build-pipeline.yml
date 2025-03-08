@@ -1,0 +1,22 @@
+name: Build Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-job:
+    runs-on: [self-hosted]  # adjust label to match your runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build Docker Image
+        run: |
+          echo "Building Docker image on self-hosted runner..."
+          docker build -t exam/demoapp:${{ github.sha }} .
+      
+      - name: Push to Registry
+        run: |
+          echo "Pushing Docker image to a registry..."
+          docker push exam/demoapp:${{ github.sha }}

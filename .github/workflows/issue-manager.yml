@@ -1,0 +1,39 @@
+name: Issue Manager
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write      # Required to add labels to issues/PRs
+  pull-requests: write  # Often needed to manipulate PR labels
+
+jobs:
+  handle-comments:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GH CLI will use this
+    steps:
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Check and Apply Labels
+        run: |
+          COMMENT_BODY="${{ github.event.comment.body }}"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          
+          # Look for command in the form "/label <labelName>"
+          # e.g., "/label bug" or "/label documentation"
+          if echo "$COMMENT_BODY" | grep -Eiq '^/label '; then
+            # Extract everything after "/label "
+            LABEL=$(echo "$COMMENT_BODY" | sed -nE 's/^\/label (.+)/\1/p')
+
+            echo "Applying label: '$LABEL' to issue/PR #$ISSUE_NUMBER"
+
+            # Add the label to the issue or PR using GH CLI
+            gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL"
+          else
+            echo "No labeling command found. Doing nothing."
+          fi

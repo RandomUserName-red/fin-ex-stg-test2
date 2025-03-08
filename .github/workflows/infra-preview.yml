@@ -1,0 +1,37 @@
+name: Terraform PR Plan
+
+on:
+  pull_request_target:
+    branches: [ "main" ]
+
+permissions:
+  contents: read  # minimal permissions
+
+jobs:
+  validate-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR Code
+        uses: actions/checkout@v3
+        with:
+          # Checkout the contributor’s fork/branch
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Initialize
+        run: terraform init
+
+      - name: Preview Changes
+        # Example: show plan output.  Using continue-on-error so subsequent steps can run
+        run: terraform plan -no-color
+        continue-on-error: true
+
+      - name: Publish Preview Artifacts
+        # Optional: Upload plan logs or other details for maintainers to review
+        run: |
+          echo "Publishing preview info..."
+          # For example:
+          # actions/upload-artifact@v3 with: { name: "plan-log", path: "plan.log" }
